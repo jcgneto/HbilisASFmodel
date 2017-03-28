@@ -235,7 +235,7 @@ head(datalong3c, 20)
 testnew3<-datalong3c[1:8,]
 testnew3
 sum(testnew3$proportion)
-testnew3<-datalong3[9:16,]
+testnew3<-datalong3c[9:16,]
 testnew3
 sum(testnew3$proportion)
 
