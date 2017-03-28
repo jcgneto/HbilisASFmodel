@@ -17,8 +17,8 @@ library(scales)
 setwd("~/Documents/pathobiont paper/communitystructure")
 ```
 
-
-Does the order of colonization with the pathobiont and ASF community alter the ASF composition?
+data 2 - Order of colonization between the pathobiont and ASF community
+2) Does the order of colonization alter the ASF composition?
 all data comes from C3H/HeN mice 
 ```{r, echo=TRUE}
 data2<-read.csv("data2cont.csv")
@@ -43,15 +43,15 @@ plot(pca2, type='l', main="Scree plot")
 p5<-autoplot(prcomp(df2, scale=TRUE), data = data2a, colour = 'asf', loadings= TRUE, loadings.label = TRUE, frame = TRUE, frame.type= 't', xlab="PC1 (41.21%)", ylab="PC2 (19.22%)")
 p6<-autoplot(prcomp(df2, scale=TRUE), data = data2a, colour = 'dss', loadings= TRUE, loadings.label = TRUE, frame = TRUE, frame.type= 't', xlab="PC1 (41.21%)", ylab="PC2 (19.22%)")
 p7<-autoplot(prcomp(df2, scale=TRUE), data = data2a, colour = 'pathobiont', loadings= TRUE, loadings.label = TRUE, frame= TRUE, frame.type= 't', xlab="PC1 (41.21%)", ylab="PC2 (19.22%)")
-p8<-autoplot(prcomp(df2, scale=TRUE), data = data2a, colour = 'groups', loadings= FALSE, loadings.label = FALSE, frame = TRUE, frame.type= 't', xlab="PC1 (41.21%)", ylab="PC2 (19.22%)", label.size = 50, size = 3, label.n = 30)+
-theme(axis.text=element_text(size=20, family="Times New Roman"),
-        axis.title=element_text(size=20,face="bold", family="Times New Roman"),
-        legend.text=element_text(size=16, family="Times New Roman"),
-        legend.title=element_text(size=16,face="bold", family="Times New Roman"))
-
+p8<-autoplot(prcomp(df2, scale=TRUE), data = data2a, colour = 'TREATMENTS', loadings= TRUE, loadings.label = TRUE, frame = TRUE, frame.type= 't', xlab="PC1 (41.21%)", ylab="PC2 (19.22%)", label.size = 50, size = 3, label.n = 30)+
+theme(axis.text=element_text(size=30, family="Arial"),
+        axis.title=element_text(size=30,face="bold", family="Arial"),
+        legend.text=element_text(size=24, family="Arial"),
+        legend.title=element_text(size=24,face="bold", family="Arial"))
+p8
 
 p8a
-new('ggmultiplot', plots = list(p5, p6, p7, p8))
+new('ggmultiplot', plots = list(p8, p11a))
 #p5
 #p6
 #p7
@@ -66,10 +66,10 @@ str(datalong2a)
 # calculate proportions
 library(plyr)
 require(plyr)
-datalong2b <- ddply(datalong2a, .(groups, id, taxa))
+datalong2b <- ddply(datalong2a, .(TREATMENTS, id, taxa))
 head(datalong2b)
 
-datalong2c<-ddply(datalong2b, .(groups, id), transform, total=sum(abundance))
+datalong2c<-ddply(datalong2b, .(TREATMENTS, id), transform, total=sum(abundance))
 head(datalong2c)
 
 datalong2c$proportion<-datalong2c$abundance/datalong2c$total
@@ -83,7 +83,7 @@ sum(testnew1$proportion)
 
 #relative abundances for each ASF considering the total number of bacteria per gram of cecal content
 require(ggplot2)
-p <- ggplot(data = datalong2c, aes(x=groups, y=proportion)) 
+p <- ggplot(data = datalong2c, aes(x=TREATMENTS, y=proportion)) 
 p <- p + geom_boxplot(aes(fill = taxa))
 p <- p + geom_point(aes(y=proportion, group=taxa), position = position_dodge(width=0.75))
 p <- p + facet_wrap( ~ taxa, scales="fixed", ncol=2)
@@ -95,9 +95,17 @@ p
 #Permanova analysis to decompose the variance and explain the ASF community structure
 set.seed(4490)
 bc2<-vegdist(df2, method="bray", binary=FALSE, na.rm=TRUE) 
+pca2bb<-prcomp(bc2, scale= TRUE) 
+summary(pca2bb)
+p8bb<-autoplot(prcomp(bc2, scale=TRUE), data = data2a, colour = 'TREATMENTS', loadings= FALSE, loadings.label = FALSE, frame = TRUE, frame.type= 't', xlab="PC1 (41.21%)", ylab="PC2 (19.22%)", label.size = 50, size = 3, label.n = 30)+
+theme(axis.text=element_text(size=20, family="Arial"),
+        axis.title=element_text(size=20,face="bold", family="Arial"),
+        legend.text=element_text(size=16, family="Arial"),
+        legend.title=element_text(size=16,face="bold", family="Arial"))
+p8bb
 #bc
 set.seed(1041)
-ada2=adonis(bc2~groups, data=data2a, permutations=999)
+ada2=adonis(bc2~TREATMENTS, data=data2a, permutations=999)
 ada2
 set.seed(1233)
 ad2=adonis(bc2~asf*dss*pathobiont, data=data2a, permutations=999)
@@ -106,7 +114,7 @@ ad2
 #Analysis of homogeneity of the Bray-curtis distances using the betadisper function 
 #objective :analysis of multivariate homogeneity of group dispersions (variances). betadisper is a multivariate analogue of Levene's test for homogeneity of variances
 
-mod2a <- with(data2a, betadisper(bc2, groups))
+mod2a <- with(data2a, betadisper(bc2, TREATMENTS))
 mod2a
 plot(mod2a, main= "All Groups")
 op <- par(mar = c(4,4,4,4) + 0.1)
@@ -147,12 +155,15 @@ library(tidyr)
 
 anosim11<- vegdist(df2,method="bray", binary=FALSE)
 attach(datalong2a)
-anosim12 <- anosim(anosim11, groups)
+anosim12 <- anosim(anosim11, TREATMENTS)
 summary(anosim12)
 plot(anosim12)
 ```
 
-Does the parental generation (G1 vs G2) alter the ASF composition?
+
+
+data 3 - Generation and/or DSS effect once the pathobiont is established
+3) Does the parental generation (G1 vs G2 vs G3) alter the ASF composition?
 
 dataset comes from C3H/HeN mice colonized with H. bilis and ASF from birth
 ```{r, echo=TRUE}
@@ -177,14 +188,14 @@ pca3
 plot(pca3, type='l', main = "Scree plot")
 
 
-p9<-autoplot(prcomp(df3, scale= TRUE), data = data3a, colour = 'generation', loadings= TRUE, loadings.label = TRUE, frame = TRUE, frame.type= 't', xlab="PC1 (39.77%)", ylab="PC2 (21.4%)")
-p10<-autoplot(prcomp(df3, scale = TRUE), data = data3a, colour = 'dss', loadings= TRUE, loadings.label = TRUE, frame = TRUE, frame.type= 't', xlab="PC1 (39.77%)", ylab="PC2 (21.4%)")
-p11<-autoplot(prcomp(df3, scale = TRUE), data = data3a, colour = 'groups', loadings= FALSE, loadings.label = FALSE, frame = TRUE, frame.type= 't', xlab="PC1 (39.77%)", ylab="PC2 (21.4%)",
+p9<-autoplot(prcomp(df3, scale= TRUE), data = data3a, colour = 'generation', loadings= TRUE, loadings.label = TRUE, frame = TRUE, frame.type= 't', xlab="PC1 (35.73%)", ylab="PC2 (23%)")
+p10<-autoplot(prcomp(df3, scale = TRUE), data = data3a, colour = 'dss', loadings= TRUE, loadings.label = TRUE, frame = TRUE, frame.type= 't', xlab="PC1 (35.73%)", ylab="PC2 (23%)")
+p11<-autoplot(prcomp(df3, scale = TRUE), data = data3a, colour = 'TREATMENTS', loadings= TRUE, loadings.label = TRUE, frame = TRUE, frame.type= 't', xlab="PC1 (35.73%)", ylab="PC2 (23%)",
 label.size = 50, size = 3, label.n = 30) +
-theme(axis.text=element_text(size=20, family="Times New Roman"),
-        axis.title=element_text(size=20,face="bold", family="Times New Roman"),
-        legend.text=element_text(size=16, family="Times New Roman"),
-        legend.title=element_text(size=16,face="bold", family="Times New Roman"))
+theme(axis.text=element_text(size=30, family="Arial"),
+        axis.title=element_text(size=30,face="bold", family="Arial"),
+        legend.text=element_text(size=24, family="Arial"),
+        legend.title=element_text(size=24,face="bold", family="Arial"))
 
 
 
@@ -213,10 +224,10 @@ str(datalong3a)
 # calculate proportions
 library(plyr)
 require(plyr)
-datalong3b <- ddply(datalong3a, .(groups, id, taxa))
+datalong3b <- ddply(datalong3a, .(TREATMENTS, id, taxa))
 head(datalong3b)
 
-datalong3c<-ddply(datalong3b, .(groups, id), transform, total=sum(abundance))
+datalong3c<-ddply(datalong3b, .(TREATMENTS, id), transform, total=sum(abundance))
 #head(datalong3c)
 
 datalong3c$proportion<-datalong3c$abundance/datalong3c$total
@@ -230,7 +241,7 @@ sum(testnew3$proportion)
 
 #relative abundances for each ASF considering the total number of bacteria per gram of cecal content
 require(ggplot2)
-p <- ggplot(data = datalong3c, aes(x=groups, y=proportion)) 
+p <- ggplot(data = datalong3c, aes(x=TREATMENTS, y=proportion)) 
 p <- p + geom_boxplot(aes(fill = taxa))
 p <- p + geom_point(aes(y=proportion, group=taxa), position = position_dodge(width=0.75))
 p <- p + facet_wrap( ~ taxa, scales="fixed", ncol=2)
@@ -244,7 +255,7 @@ set.seed(445)
 bc3<-vegdist(df3, method="bray", binary=FALSE, na.rm=TRUE) 
 #bc
 set.seed(1045)
-ada4=adonis(bc3~groups, data=data3a, permutations=999)
+ada4=adonis(bc3~TREATMENTS, data=data3a, permutations=999)
 ada4
 set.seed(1443)
 ad4=adonis(bc3~generation*dss, data=data3a, permutations=999)
@@ -252,15 +263,14 @@ ad4
 set.seed(1442)
 ad5=adonis(bc3~generation+dss, data=data3a, permutations=999)
 ad5
-anosim(df3, groups,permutations = 999, distance = "bray")
-set.see(569)
-
+anosim(df3, TREATMENTS,permutations = 999, distance = "bray")
+set.seed(569)
 library(vegan)
 data(dune)
 data(dune.env)
 dune.dist <- vegdist(df3)
 attach(datalong3a)
-dune.ano <- anosim(dune.dist, groups)
+dune.ano <- anosim(dune.dist, TREATMENTS)
 summary(dune.ano)
 par(mar = c(7,7,7,7))
 plot(dune.ano, col=terrain.colors(5), horiz=FALSE, ylab="Dissimilarity Ranks", axes= FALSE)
@@ -268,13 +278,23 @@ box()
 axis(2,
      las=2)
 names1<-c("Between", "HbASFbirth1", "HbASFbirth1DSS","HbASFbirth2",
-          "HbASFbirth2DSS")
-axis(1,at=1:5, labels=names1,
+          "HbASFbirth2DSS","HbASFbirth3", "HbASFbirth3DSS")
+axis(1,at=1:7, labels=names1,
      las=2, cex.axis=0.8) 
+# ANOSIM 
+library(vegan)
+#dataframe from wide to long format for relative abundance plot
+library(tidyr)
+
+anosimG3<- vegdist(df3,method="bray", binary=FALSE)
+attach(datalong3a)
+anosimG4 <- anosim(anosimG3, TREATMENTS)
+summary(anosimG4)
+plot(anosimG4)
 #Analysis of homogeneity of the Bray-curtis distances using the betadisper function 
 #objective :analysis of multivariate homogeneity of group dispersions (variances). betadisper is a multivariate analogue of Levene's test for homogeneity of variances
 
-mod3a <- with(data3a, betadisper(bc3, groups), type=c("centroid"))
+mod3a <- with(data3a, betadisper(bc3, TREATMENTS), type=c("centroid"))
 mod3a
 plot(mod3a, main= "All Groups")
 op <- par(mar = c(4,4,4,4) + 0.1)
@@ -300,7 +320,6 @@ anova(mod3c)
 anova(mod3c)
 permutest(mod3c)
 TukeyHSD(mod3c)# provide the p-values for group comparisons 
-```
 
 ASF community structure analysis for C57BL/6 and Rag1-/- experiments 
 ASF vs H. bilis-ASF groups treated or not with 2% DSS
