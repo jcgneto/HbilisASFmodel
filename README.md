@@ -832,3 +832,107 @@ c1
 
 library(gridExtra)
 grid.arrange(a1,c1, nrow=2, clip=TRUE)
+
+#######################################################################################################################################
+ASF birth Hb later - community structure analysis
+
+- PCA plot using raw abundances
+- Permanova
+- Anosim
+- Betadisper
+
+```{r, echo=TRUE}
+mod1<-read.csv("data6cont.csv")
+sum(is.na(mod1)) #checking for NA
+str(mod1)
+head(mod1)
+tail(mod1)
+mod2<-na.omit(mod1)
+str(mod2)
+sum(is.na(mod2))
+
+
+#PCA analysis
+dataPCA <- mod2[c(2:9)]
+str(dataPCA)
+pcamod2<-prcomp(dataPCA, scale= TRUE)  #cor=TRUE
+summary(pcamod2)
+pcamod2
+plot(pcamod2, type='l', main = "Scree plot")
+
+
+
+plotmod2<-autoplot(prcomp(dataPCA, scale = TRUE), data = mod2, colour = 'TREATMENTS', loadings= TRUE, loadings.label = TRUE, frame = TRUE, frame.type= 't', xlab="PC1 (54.33%)", ylab="PC2 (21.22%)",
+label.size = 50, size = 3, label.n = 30) +
+theme(axis.text=element_text(size=30, family="Arial"),
+        axis.title=element_text(size=30,face="bold", family="Arial"),
+        legend.text=element_text(size=20, family="Arial"),
+        legend.title=element_text(size=24,face="bold", family="Arial"))
+
+
+#dataframe from wide to long format for relative abundance plot
+library(tidyr)
+mod3 <- gather(mod2, taxa, abundance, ASF_356:ASF_519, factor_key=TRUE)
+head(mod3)
+tail(mod3)
+str(mod3)
+
+# calculate proportions
+library(plyr)
+require(plyr)
+mod4 <- ddply(mod3, .(TREATMENTS, id, taxa))
+head(mod4)
+
+mod5<-ddply(mod4, .(TREATMENTS, id), transform, total=sum(abundance))
+#head(datalong3c)
+
+mod5$proportion<-mod5$abundance/mod5$total
+head(mod5)
+testnew3<-mod5[1:8,]
+testnew3
+sum(testnew3$proportion)
+testnew3<-mod5[9:16,]
+testnew3
+sum(testnew3$proportion)
+
+#relative abundances for each ASF considering the total number of bacteria per gram of cecal content
+require(ggplot2)
+p <- ggplot(data = mod5, aes(x=TREATMENTS, y=proportion)) 
+p <- p + geom_boxplot(aes(fill = taxa))
+p <- p + geom_point(aes(y=proportion, group=taxa), position = position_dodge(width=0.75))
+p <- p + facet_wrap( ~ taxa, scales="fixed", ncol=2)
+p <- p + xlab("TREATMENTS") + ylab("Proportion") 
+p <- p + guides(fill=guide_legend(title="ASF Taxa"))
+p <- p + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p
+
+#Permanova analysis to decompose the variance and explain the ASF community structure
+set.seed(4456)
+pm1<-vegdist(dataPCA, method="bray", binary=FALSE, na.rm=TRUE) 
+#bc
+set.seed(1045)
+pm2=adonis(pm1~TREATMENTS, data=mod2, permutations=999)
+pm2
+
+
+# ANOSIM 
+library(vegan)
+#dataframe from wide to long format for relative abundance plot
+library(tidyr)
+
+an1<- vegdist(dataPCA,method="bray", binary=FALSE)
+attach(mod3)
+an2 <- anosim(an1, TREATMENTS)
+summary(an2)
+plot(an2)
+
+#Analysis of homogeneity of the Bray-curtis distances using the betadisper function 
+#objective :analysis of multivariate homogeneity of group dispersions (variances). betadisper is a multivariate analogue of Levene's test for homogeneity of variances
+
+bet1 <- with(mod2, betadisper(an1, TREATMENTS), type=c("centroid"))
+bet1
+plot(bet1, main= "All Groups")
+boxplot(bet1, cex.axis = 0.8, main= "All Groups", ylim= c(0,1))
+anova(bet1)
+permutest(bet1)
+TukeyHSD(bet1)# provide the p-values for group comparisons 
